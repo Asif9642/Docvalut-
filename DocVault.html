@@ -1,0 +1,2379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>DocVault – Family Documents</title>
+<meta name="description" content="Secure offline personal document storage">
+<meta name="theme-color" content="#0f1117">
+
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+
+<style>
+/* ============================================================
+   CSS VARIABLES & RESET
+   ============================================================ */
+:root {
+  /* Dark theme (default) */
+  --bg-primary:    #0f1117;
+  --bg-secondary:  #171a24;
+  --bg-card:       #1e2130;
+  --bg-card-hover: #252a3a;
+  --bg-overlay:    rgba(15,17,23,0.92);
+  --border:        rgba(255,255,255,0.07);
+  --border-accent: rgba(99,179,237,0.3);
+
+  --text-primary:  #eef2ff;
+  --text-secondary:#94a3c4;
+  --text-muted:    #5a6480;
+
+  --accent:        #63b3ed;
+  --accent-dark:   #3a8fd4;
+  --accent-glow:   rgba(99,179,237,0.18);
+  --green:         #68d391;
+  --red:           #fc8181;
+  --yellow:        #f6d860;
+  --purple:        #b794f4;
+  --pink:          #f687b3;
+  --orange:        #fbb77a;
+
+  /* Person colors */
+  --col-myself:    #63b3ed;
+  --col-father:    #68d391;
+  --col-mother:    #f687b3;
+  --col-sister:    #b794f4;
+
+  --radius:        14px;
+  --radius-sm:     8px;
+  --radius-pill:   999px;
+
+  --shadow:        0 4px 24px rgba(0,0,0,0.4);
+  --shadow-card:   0 2px 12px rgba(0,0,0,0.3);
+
+  --nav-height:    64px;
+  --topbar-height: 60px;
+
+  --transition:    0.22s cubic-bezier(.4,0,.2,1);
+  --bounce:        0.35s cubic-bezier(.34,1.56,.64,1);
+}
+
+[data-theme="light"] {
+  --bg-primary:    #f0f2f8;
+  --bg-secondary:  #e4e8f2;
+  --bg-card:       #ffffff;
+  --bg-card-hover: #f8f9ff;
+  --bg-overlay:    rgba(240,242,248,0.95);
+  --border:        rgba(0,0,0,0.08);
+  --border-accent: rgba(50,130,200,0.3);
+
+  --text-primary:  #1a1f36;
+  --text-secondary:#4a5568;
+  --text-muted:    #9aa5b4;
+
+  --accent:        #2b7de9;
+  --accent-dark:   #1a5fc4;
+  --accent-glow:   rgba(43,125,233,0.12);
+
+  --shadow:        0 4px 24px rgba(0,0,0,0.1);
+  --shadow-card:   0 2px 12px rgba(0,0,0,0.07);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { font-size: 16px; scroll-behavior: smooth; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100dvh;
+  overflow-x: hidden;
+  -webkit-tap-highlight-color: transparent;
+  transition: background var(--transition), color var(--transition);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+
+/* ============================================================
+   TYPOGRAPHY
+   ============================================================ */
+h1, h2, h3, .font-display { font-family: 'Syne', sans-serif; }
+
+/* ============================================================
+   ANIMATIONS
+   ============================================================ */
+@keyframes fadeIn    { from { opacity:0 } to { opacity:1 } }
+@keyframes slideUp   { from { opacity:0; transform:translateY(20px) } to { opacity:1; transform:translateY(0) } }
+@keyframes slideDown { from { opacity:0; transform:translateY(-16px) } to { opacity:1; transform:translateY(0) } }
+@keyframes scaleIn   { from { opacity:0; transform:scale(0.85) } to { opacity:1; transform:scale(1) } }
+@keyframes shimmer   { 0%{background-position:-400px 0} 100%{background-position:400px 0} }
+@keyframes pulse     { 0%,100%{opacity:1} 50%{opacity:.5} }
+@keyframes spin      { to { transform:rotate(360deg) } }
+@keyframes pinShake  { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-6px)} 40%,80%{transform:translateX(6px)} }
+@keyframes lockBounce{ 0%{transform:scale(1)} 30%{transform:scale(1.15)} 60%{transform:scale(0.95)} 100%{transform:scale(1)} }
+
+/* ============================================================
+   PIN LOCK SCREEN
+   ============================================================ */
+#pin-screen {
+  position: fixed; inset: 0; z-index: 9999;
+  background: linear-gradient(145deg, #0a0d14 0%, #111622 50%, #0d1220 100%);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 32px;
+  animation: fadeIn 0.4s ease;
+}
+
+#pin-screen.hidden { display: none; }
+
+.pin-logo {
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+}
+.pin-logo-icon {
+  width: 72px; height: 72px;
+  background: linear-gradient(135deg, var(--accent), var(--purple));
+  border-radius: 22px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 32px;
+  box-shadow: 0 8px 32px rgba(99,179,237,0.35);
+  animation: lockBounce 0.5s ease 0.3s both;
+}
+.pin-logo h1 { font-size: 26px; font-weight: 800; color: #eef2ff; letter-spacing: -0.5px; }
+.pin-logo p  { font-size: 13px; color: #5a6480; }
+
+.pin-display {
+  display: flex; gap: 14px;
+}
+.pin-dot {
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(99,179,237,0.4);
+  background: transparent;
+  transition: all var(--bounce);
+}
+.pin-dot.filled {
+  background: var(--accent);
+  border-color: var(--accent);
+  transform: scale(1.1);
+  box-shadow: 0 0 10px rgba(99,179,237,0.5);
+}
+
+.pin-pad {
+  display: grid; grid-template-columns: repeat(3, 72px);
+  gap: 12px;
+}
+.pin-btn {
+  width: 72px; height: 72px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.05);
+  color: #eef2ff;
+  font-size: 22px;
+  font-family: 'Syne', sans-serif;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+  display: flex; align-items: center; justify-content: center;
+  backdrop-filter: blur(8px);
+}
+.pin-btn:active { transform: scale(0.92); background: rgba(99,179,237,0.2); }
+.pin-btn.action { font-size: 16px; }
+.pin-btn.del    { color: var(--red); }
+
+.pin-error {
+  font-size: 13px; color: var(--red);
+  min-height: 20px; text-align: center;
+}
+.pin-error.shake { animation: pinShake 0.4s ease; }
+
+.pin-hint { font-size: 12px; color: #3a4060; text-align: center; }
+
+/* ============================================================
+   SET PIN MODAL
+   ============================================================ */
+.set-pin-overlay {
+  position: fixed; inset: 0; z-index: 8888;
+  background: rgba(0,0,0,0.7);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.3s ease;
+}
+.set-pin-overlay.hidden { display: none; }
+
+.set-pin-box {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  padding: 32px 28px;
+  width: 100%; max-width: 340px;
+  border: 1px solid var(--border);
+  animation: scaleIn 0.3s var(--bounce);
+  display: flex; flex-direction: column; align-items: center; gap: 20px;
+}
+.set-pin-box h2 { font-size: 20px; font-weight: 700; text-align: center; }
+.set-pin-box p  { font-size: 13px; color: var(--text-secondary); text-align: center; }
+
+/* ============================================================
+   APP SHELL
+   ============================================================ */
+#app { display: none; flex-direction: column; min-height: 100dvh; }
+#app.visible { display: flex; animation: fadeIn 0.4s ease; }
+
+/* ============================================================
+   TOP BAR
+   ============================================================ */
+.topbar {
+  position: sticky; top: 0; z-index: 100;
+  height: var(--topbar-height);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center;
+  padding: 0 16px; gap: 12px;
+  backdrop-filter: blur(12px);
+}
+
+.topbar-logo {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800; font-size: 19px;
+  background: linear-gradient(90deg, var(--accent), var(--purple));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+  flex: none;
+}
+
+.search-wrap {
+  flex: 1; position: relative;
+  max-width: 400px;
+}
+.search-wrap input {
+  width: 100%; height: 38px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  padding: 0 16px 0 38px;
+  font-size: 14px;
+  color: var(--text-primary);
+  font-family: 'DM Sans', sans-serif;
+  outline: none;
+  transition: border var(--transition);
+}
+.search-wrap input::placeholder { color: var(--text-muted); }
+.search-wrap input:focus { border-color: var(--accent); }
+.search-wrap .search-icon {
+  position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+  color: var(--text-muted); font-size: 15px; pointer-events: none;
+}
+
+.topbar-actions { display: flex; gap: 8px; margin-left: auto; flex: none; }
+
+.icon-btn {
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: 16px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all var(--transition);
+  position: relative;
+}
+.icon-btn:hover  { background: var(--bg-card-hover); color: var(--text-primary); }
+.icon-btn:active { transform: scale(0.92); }
+
+/* ============================================================
+   BOTTOM NAV
+   ============================================================ */
+.bottom-nav {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+  height: var(--nav-height);
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-around;
+  padding-bottom: env(safe-area-inset-bottom);
+  backdrop-filter: blur(12px);
+}
+
+.nav-item {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 8px 16px;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: color var(--transition);
+  font-size: 10px;
+  font-weight: 500;
+  position: relative;
+  flex: 1;
+  border: none; background: none;
+}
+.nav-item span:first-child { font-size: 20px; line-height: 1; }
+.nav-item.active { color: var(--accent); }
+.nav-item.active::before {
+  content: '';
+  position: absolute; top: -1px; left: 50%; transform: translateX(-50%);
+  width: 32px; height: 3px;
+  background: var(--accent);
+  border-radius: 0 0 3px 3px;
+}
+
+/* ============================================================
+   MAIN CONTENT AREA
+   ============================================================ */
+.main-content {
+  flex: 1;
+  padding: 16px 16px calc(var(--nav-height) + 16px);
+  overflow-y: auto;
+  max-width: 600px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* ============================================================
+   SECTIONS (PAGES)
+   ============================================================ */
+.page { display: none; }
+.page.active { display: block; animation: slideUp 0.3s ease; }
+
+/* ============================================================
+   HOME PAGE
+   ============================================================ */
+.home-greeting {
+  margin-bottom: 24px;
+}
+.home-greeting h2 {
+  font-size: 24px; font-weight: 800;
+  line-height: 1.2;
+}
+.home-greeting p {
+  font-size: 14px; color: var(--text-secondary); margin-top: 4px;
+}
+
+/* Storage usage bar */
+.storage-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  margin-bottom: 24px;
+}
+.storage-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.storage-header span { font-size: 13px; font-weight: 600; }
+.storage-header small { font-size: 12px; color: var(--text-muted); }
+
+.storage-bar-bg {
+  height: 8px; background: var(--bg-primary);
+  border-radius: var(--radius-pill); overflow: hidden;
+}
+.storage-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--purple));
+  border-radius: var(--radius-pill);
+  transition: width 0.6s cubic-bezier(.4,0,.2,1);
+}
+
+/* Person cards on home */
+.section-title {
+  font-size: 13px; font-weight: 600;
+  color: var(--text-muted); letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 12px; margin-top: 8px;
+}
+
+.person-cards {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 12px; margin-bottom: 24px;
+}
+
+.person-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 16px;
+  cursor: pointer;
+  transition: all var(--transition);
+  position: relative; overflow: hidden;
+}
+.person-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+.person-card[data-person="myself"]  { --pc: var(--col-myself); }
+.person-card[data-person="father"]  { --pc: var(--col-father); }
+.person-card[data-person="mother"]  { --pc: var(--col-mother); }
+.person-card[data-person="sister"]  { --pc: var(--col-sister); }
+.person-card::before { background: var(--pc); }
+
+.person-card:hover { background: var(--bg-card-hover); transform: translateY(-2px); box-shadow: var(--shadow-card); }
+.person-card:active { transform: scale(0.97); }
+
+.person-avatar {
+  width: 42px; height: 42px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--pc) 20%, transparent);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; margin-bottom: 10px;
+  border: 1px solid color-mix(in srgb, var(--pc) 30%, transparent);
+}
+.person-name  { font-size: 15px; font-weight: 700; }
+.person-count { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+/* Recent docs */
+.recent-list { display: flex; flex-direction: column; gap: 10px; }
+
+.recent-item {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  display: flex; align-items: center; gap: 12px;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.recent-item:hover { background: var(--bg-card-hover); }
+
+.recent-thumb {
+  width: 44px; height: 44px;
+  border-radius: 10px;
+  object-fit: cover;
+  background: var(--bg-primary);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; flex: none;
+  overflow: hidden;
+}
+.recent-thumb img { width: 100%; height: 100%; object-fit: cover; }
+
+.recent-info { flex: 1; min-width: 0; }
+.recent-name { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.recent-meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+.recent-badge {
+  font-size: 10px; font-weight: 600; padding: 3px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--accent-glow); color: var(--accent);
+  white-space: nowrap; flex: none;
+}
+
+/* ============================================================
+   FOLDER PAGE (per-person)
+   ============================================================ */
+.folder-header {
+  display: flex; align-items: center; gap: 12px; margin-bottom: 20px;
+}
+.folder-back {
+  width: 36px; height: 36px; border-radius: 50%;
+  border: 1px solid var(--border); background: var(--bg-card);
+  color: var(--text-secondary); font-size: 16px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: all var(--transition); flex: none;
+}
+.folder-back:active { transform: scale(0.9); }
+
+.folder-title-wrap h2 { font-size: 20px; font-weight: 800; }
+.folder-title-wrap p  { font-size: 12px; color: var(--text-muted); }
+
+.folder-actions {
+  margin-left: auto; display: flex; gap: 8px;
+}
+
+/* Tag filters */
+.tag-filters {
+  display: flex; gap: 8px;
+  overflow-x: auto; padding-bottom: 4px;
+  margin-bottom: 16px;
+  scrollbar-width: none;
+}
+.tag-filters::-webkit-scrollbar { display: none; }
+
+.tag-chip {
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: 12px; font-weight: 500;
+  cursor: pointer; white-space: nowrap;
+  transition: all var(--transition);
+  flex: none;
+}
+.tag-chip:hover  { border-color: var(--accent); color: var(--accent); }
+.tag-chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+/* Sort controls */
+.sort-bar {
+  display: flex; justify-content: flex-end; align-items: center; gap: 8px;
+  margin-bottom: 14px;
+}
+.sort-bar label { font-size: 12px; color: var(--text-muted); }
+.sort-select {
+  background: var(--bg-card); border: 1px solid var(--border);
+  color: var(--text-primary); font-size: 12px;
+  padding: 5px 10px; border-radius: var(--radius-pill);
+  outline: none; cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+}
+
+/* Document grid */
+.doc-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.doc-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden; cursor: pointer;
+  transition: all var(--transition);
+  position: relative;
+  animation: scaleIn 0.25s var(--bounce) both;
+}
+.doc-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-card); border-color: var(--border-accent); }
+.doc-card:active { transform: scale(0.97); }
+
+.doc-thumb {
+  height: 110px; background: var(--bg-primary);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 40px; overflow: hidden; position: relative;
+}
+.doc-thumb img { width: 100%; height: 100%; object-fit: cover; }
+
+.doc-thumb-pdf {
+  background: linear-gradient(135deg, #1a1228, #2d1a40);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+}
+.doc-thumb-pdf span { font-size: 36px; }
+.doc-thumb-pdf small { font-size: 10px; color: var(--purple); font-weight: 700; letter-spacing: 1px; }
+
+.doc-card-menu {
+  position: absolute; top: 8px; right: 8px;
+  width: 28px; height: 28px; border-radius: 50%;
+  background: rgba(0,0,0,0.5);
+  border: none; color: #fff; font-size: 14px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; opacity: 0; transition: opacity var(--transition);
+  backdrop-filter: blur(4px);
+}
+.doc-card:hover .doc-card-menu { opacity: 1; }
+
+.doc-info { padding: 10px 12px 12px; }
+.doc-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.doc-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.doc-tag {
+  font-size: 10px; padding: 2px 7px;
+  border-radius: var(--radius-pill);
+  background: var(--accent-glow); color: var(--accent);
+  font-weight: 500;
+}
+.doc-date { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+
+/* Empty state */
+.empty-state {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 12px; padding: 48px 24px; text-align: center;
+}
+.empty-icon { font-size: 56px; opacity: 0.3; }
+.empty-state h3 { font-size: 17px; font-weight: 700; color: var(--text-secondary); }
+.empty-state p  { font-size: 13px; color: var(--text-muted); max-width: 220px; }
+
+/* ============================================================
+   SETTINGS PAGE
+   ============================================================ */
+.settings-section { margin-bottom: 28px; }
+
+.settings-item {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  display: flex; align-items: center;
+  padding: 14px 16px; gap: 14px;
+  margin-bottom: 8px;
+  cursor: pointer; transition: background var(--transition);
+}
+.settings-item:hover { background: var(--bg-card-hover); }
+.settings-item:active { transform: scale(0.99); }
+
+.settings-icon { font-size: 20px; width: 32px; text-align: center; }
+.settings-info { flex: 1; }
+.settings-info strong { font-size: 14px; font-weight: 600; display: block; }
+.settings-info small  { font-size: 12px; color: var(--text-muted); }
+
+.settings-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+
+/* Toggle switch */
+.toggle {
+  width: 44px; height: 24px;
+  background: var(--bg-primary);
+  border-radius: var(--radius-pill);
+  position: relative; cursor: pointer;
+  border: 1px solid var(--border);
+  transition: background var(--transition);
+  flex: none;
+}
+.toggle.on { background: var(--accent); border-color: var(--accent); }
+.toggle::after {
+  content: '';
+  position: absolute; top: 2px; left: 2px;
+  width: 18px; height: 18px;
+  border-radius: 50%; background: #fff;
+  transition: transform var(--transition);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
+.toggle.on::after { transform: translateX(20px); }
+
+/* ============================================================
+   FAB (Floating Action Button)
+   ============================================================ */
+.fab {
+  position: fixed;
+  bottom: calc(var(--nav-height) + 16px);
+  right: 20px;
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--purple));
+  border: none; color: #fff;
+  font-size: 24px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 6px 24px rgba(99,179,237,0.4);
+  transition: all var(--bounce);
+  z-index: 90;
+}
+.fab:hover  { transform: scale(1.08); box-shadow: 0 8px 32px rgba(99,179,237,0.5); }
+.fab:active { transform: scale(0.94); }
+.fab.hidden { display: none; }
+
+/* FAB Speed dial */
+.fab-menu {
+  position: fixed;
+  bottom: calc(var(--nav-height) + 82px);
+  right: 20px;
+  display: flex; flex-direction: column; align-items: flex-end; gap: 10px;
+  z-index: 89;
+  pointer-events: none; opacity: 0;
+  transition: opacity var(--transition);
+}
+.fab-menu.open { pointer-events: all; opacity: 1; }
+
+.fab-option {
+  display: flex; align-items: center; gap: 10px;
+  animation: slideUp 0.2s ease both;
+}
+.fab-option:nth-child(1) { animation-delay: 0.05s; }
+.fab-option:nth-child(2) { animation-delay: 0.1s; }
+.fab-option:nth-child(3) { animation-delay: 0.15s; }
+
+.fab-option-label {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  padding: 6px 14px;
+  font-size: 13px; font-weight: 500;
+  box-shadow: var(--shadow-card);
+  white-space: nowrap;
+}
+.fab-mini {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  font-size: 18px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: var(--shadow-card);
+  transition: all var(--transition);
+}
+.fab-mini:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+/* FAB backdrop */
+.fab-backdrop {
+  position: fixed; inset: 0; z-index: 88;
+  display: none;
+}
+.fab-backdrop.open { display: block; }
+
+/* ============================================================
+   MODALS
+   ============================================================ */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 500;
+  background: var(--bg-overlay);
+  display: flex; align-items: flex-end;
+  backdrop-filter: blur(8px);
+  animation: fadeIn 0.25s ease;
+}
+.modal-overlay.hidden { display: none; }
+.modal-overlay.center { align-items: center; padding: 20px; }
+
+.modal-sheet {
+  width: 100%; max-height: 90dvh;
+  background: var(--bg-card);
+  border-radius: 22px 22px 0 0;
+  border: 1px solid var(--border);
+  border-bottom: none;
+  padding: 0 0 env(safe-area-inset-bottom);
+  overflow: hidden;
+  animation: slideUp 0.3s var(--bounce);
+}
+
+.sheet-handle {
+  width: 40px; height: 4px;
+  background: var(--border);
+  border-radius: var(--radius-pill);
+  margin: 12px auto 0;
+}
+
+.sheet-header {
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.sheet-header h3 { font-size: 17px; font-weight: 700; }
+
+.sheet-close {
+  width: 30px; height: 30px; border-radius: 50%;
+  border: 1px solid var(--border); background: var(--bg-primary);
+  color: var(--text-muted); font-size: 14px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: all var(--transition);
+}
+.sheet-close:hover { color: var(--red); border-color: var(--red); }
+
+.sheet-body {
+  padding: 20px; overflow-y: auto;
+  max-height: calc(90dvh - 80px);
+}
+
+/* Center modal */
+.modal-center {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  width: 100%; max-width: 360px;
+  padding: 28px 24px;
+  animation: scaleIn 0.3s var(--bounce);
+}
+.modal-center h3 { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+.modal-center p  { font-size: 13px; color: var(--text-secondary); margin-bottom: 20px; }
+
+/* ============================================================
+   FORM ELEMENTS
+   ============================================================ */
+.form-group { margin-bottom: 16px; }
+.form-label {
+  display: block; font-size: 12px; font-weight: 600;
+  color: var(--text-muted); letter-spacing: 0.05em; text-transform: uppercase;
+  margin-bottom: 7px;
+}
+.form-input {
+  width: 100%; height: 44px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0 14px;
+  font-size: 14px; color: var(--text-primary);
+  font-family: 'DM Sans', sans-serif;
+  outline: none;
+  transition: border var(--transition);
+}
+.form-input:focus { border-color: var(--accent); }
+
+/* Tag input */
+.tag-input-wrap {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  cursor: text;
+  transition: border var(--transition);
+  min-height: 44px; align-items: center;
+}
+.tag-input-wrap:focus-within { border-color: var(--accent); }
+.tag-input-wrap .tag-chip {
+  padding: 3px 10px; font-size: 12px;
+  cursor: default;
+  background: var(--accent-glow); color: var(--accent);
+  border-color: transparent;
+}
+.tag-input-wrap .tag-chip button {
+  background: none; border: none; color: inherit;
+  cursor: pointer; margin-left: 4px; font-size: 11px;
+  padding: 0; line-height: 1;
+}
+.tag-input-wrap input {
+  border: none; background: none; outline: none;
+  font-size: 13px; color: var(--text-primary);
+  font-family: 'DM Sans', sans-serif;
+  min-width: 80px; flex: 1;
+}
+
+/* File drop zone */
+.drop-zone {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 28px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all var(--transition);
+  position: relative;
+}
+.drop-zone.over { border-color: var(--accent); background: var(--accent-glow); }
+.drop-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.drop-zone-icon { font-size: 36px; margin-bottom: 10px; }
+.drop-zone h4 { font-size: 15px; font-weight: 600; }
+.drop-zone p  { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+/* Preview thumbs in upload */
+.upload-previews {
+  display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px;
+}
+.upload-preview-item {
+  width: 72px; height: 72px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-primary);
+  overflow: hidden; position: relative;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px;
+  border: 1px solid var(--border);
+}
+.upload-preview-item img { width: 100%; height: 100%; object-fit: cover; }
+.upload-preview-item button {
+  position: absolute; top: 2px; right: 2px;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: rgba(0,0,0,0.6); border: none; color: #fff;
+  font-size: 10px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* ============================================================
+   BUTTONS
+   ============================================================ */
+.btn {
+  height: 44px; border-radius: var(--radius-pill);
+  border: none; cursor: pointer;
+  font-size: 14px; font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: all var(--transition); padding: 0 22px;
+}
+.btn-primary  { background: var(--accent); color: #fff; }
+.btn-primary:hover  { background: var(--accent-dark); }
+.btn-primary:active { transform: scale(0.97); }
+.btn-secondary{ background: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border); }
+.btn-secondary:hover { background: var(--bg-card-hover); }
+.btn-danger   { background: rgba(252,129,129,0.12); color: var(--red); border: 1px solid rgba(252,129,129,0.2); }
+.btn-danger:hover { background: rgba(252,129,129,0.2); }
+.btn-full     { width: 100%; }
+.btn-sm       { height: 36px; font-size: 13px; padding: 0 16px; }
+
+.btn-row { display: flex; gap: 10px; margin-top: 4px; }
+
+/* ============================================================
+   CONTEXT MENU (doc actions)
+   ============================================================ */
+.context-menu {
+  position: fixed; z-index: 600;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 6px;
+  min-width: 180px;
+  box-shadow: var(--shadow);
+  animation: scaleIn 0.2s var(--bounce);
+}
+.context-menu.hidden { display: none; }
+.ctx-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; border-radius: var(--radius-sm);
+  cursor: pointer; font-size: 14px;
+  transition: background var(--transition);
+}
+.ctx-item:hover { background: var(--bg-card-hover); }
+.ctx-item.danger { color: var(--red); }
+.ctx-item span:first-child { font-size: 16px; width: 20px; text-align: center; }
+
+/* ============================================================
+   PREVIEW MODAL (fullscreen)
+   ============================================================ */
+#preview-modal {
+  position: fixed; inset: 0; z-index: 700;
+  background: rgba(0,0,0,0.95);
+  display: flex; flex-direction: column;
+  animation: fadeIn 0.25s ease;
+}
+#preview-modal.hidden { display: none; }
+
+.preview-topbar {
+  padding: 14px 16px;
+  display: flex; align-items: center; gap: 12px;
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(8px);
+}
+.preview-topbar h4 { font-size: 15px; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.preview-body {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  padding: 16px; overflow: hidden;
+}
+.preview-body img {
+  max-width: 100%; max-height: 100%;
+  object-fit: contain; border-radius: var(--radius-sm);
+}
+.preview-body iframe {
+  width: 100%; height: 100%;
+  border: none; border-radius: var(--radius-sm);
+}
+
+.preview-pdf-fallback {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 16px; text-align: center; color: var(--text-secondary);
+}
+.preview-pdf-fallback span { font-size: 72px; }
+.preview-pdf-fallback p { font-size: 14px; }
+
+.preview-footer {
+  padding: 14px 16px;
+  display: flex; justify-content: center; gap: 12px;
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(8px);
+}
+
+/* ============================================================
+   CAMERA MODAL
+   ============================================================ */
+#camera-modal {
+  position: fixed; inset: 0; z-index: 700;
+  background: #000;
+  display: flex; flex-direction: column;
+  animation: fadeIn 0.25s ease;
+}
+#camera-modal.hidden { display: none; }
+
+#camera-video {
+  flex: 1; width: 100%; object-fit: cover;
+}
+.camera-controls {
+  padding: 28px 28px 40px;
+  display: flex; align-items: center; justify-content: space-between;
+  background: rgba(0,0,0,0.7);
+}
+.shutter-btn {
+  width: 72px; height: 72px; border-radius: 50%;
+  background: #fff; border: 4px solid rgba(255,255,255,0.3);
+  cursor: pointer; transition: all var(--transition);
+  position: relative;
+}
+.shutter-btn::after {
+  content: '';
+  position: absolute; inset: 4px;
+  border-radius: 50%; background: #fff;
+}
+.shutter-btn:active { transform: scale(0.92); background: #ddd; }
+
+/* ============================================================
+   TOAST NOTIFICATIONS
+   ============================================================ */
+#toast-container {
+  position: fixed; bottom: calc(var(--nav-height) + 16px); left: 50%;
+  transform: translateX(-50%);
+  z-index: 9000;
+  display: flex; flex-direction: column-reverse; gap: 8px;
+  pointer-events: none;
+  align-items: center;
+  width: calc(100% - 32px); max-width: 360px;
+}
+
+.toast {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  padding: 10px 18px;
+  font-size: 13px; font-weight: 500;
+  box-shadow: var(--shadow);
+  animation: slideUp 0.3s var(--bounce), fadeIn 0.3s ease;
+  display: flex; align-items: center; gap: 8px;
+  pointer-events: all;
+  white-space: nowrap;
+}
+.toast.success { border-color: rgba(104,211,145,0.3); color: var(--green); }
+.toast.error   { border-color: rgba(252,129,129,0.3); color: var(--red); }
+.toast.info    { border-color: var(--border-accent); color: var(--accent); }
+.toast.out     { animation: fadeIn 0.3s ease reverse forwards; }
+
+/* ============================================================
+   SEARCH RESULTS HIGHLIGHT
+   ============================================================ */
+mark {
+  background: rgba(99,179,237,0.25);
+  color: var(--accent); border-radius: 2px;
+  padding: 0 1px;
+}
+
+/* ============================================================
+   LOADING SPINNER
+   ============================================================ */
+.spinner {
+  width: 20px; height: 20px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (min-width: 480px) {
+  .doc-grid { grid-template-columns: repeat(3, 1fr); }
+}
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     PIN LOCK SCREEN
+     ============================================================ -->
+<div id="pin-screen">
+  <div class="pin-logo">
+    <div class="pin-logo-icon">🔒</div>
+    <h1>DocVault</h1>
+    <p>Family Document Manager</p>
+  </div>
+
+  <div class="pin-display" id="pin-display">
+    <div class="pin-dot" id="dot-0"></div>
+    <div class="pin-dot" id="dot-1"></div>
+    <div class="pin-dot" id="dot-2"></div>
+    <div class="pin-dot" id="dot-3"></div>
+  </div>
+
+  <div id="pin-label" style="font-size:14px;color:var(--text-secondary);">Enter PIN</div>
+
+  <div class="pin-pad">
+    <button class="pin-btn" onclick="pinInput('1')">1</button>
+    <button class="pin-btn" onclick="pinInput('2')">2</button>
+    <button class="pin-btn" onclick="pinInput('3')">3</button>
+    <button class="pin-btn" onclick="pinInput('4')">4</button>
+    <button class="pin-btn" onclick="pinInput('5')">5</button>
+    <button class="pin-btn" onclick="pinInput('6')">6</button>
+    <button class="pin-btn" onclick="pinInput('7')">7</button>
+    <button class="pin-btn" onclick="pinInput('8')">8</button>
+    <button class="pin-btn" onclick="pinInput('9')">9</button>
+    <button class="pin-btn action" onclick="pinClear()">⌫</button>
+    <button class="pin-btn" onclick="pinInput('0')">0</button>
+    <button class="pin-btn action del" onclick="pinDelete()">✕</button>
+  </div>
+
+  <div class="pin-error" id="pin-error"></div>
+  <div class="pin-hint" id="pin-hint">Default PIN: 1234 &nbsp;•&nbsp; Change in Settings</div>
+</div>
+
+<!-- Set PIN overlay (for first time or change) -->
+<div class="set-pin-overlay hidden" id="set-pin-overlay">
+  <div class="set-pin-box">
+    <h2>Set a PIN</h2>
+    <p>Choose a 4-digit PIN to protect your documents.</p>
+    <div class="pin-display" id="set-pin-display">
+      <div class="pin-dot" id="sdot-0"></div>
+      <div class="pin-dot" id="sdot-1"></div>
+      <div class="pin-dot" id="sdot-2"></div>
+      <div class="pin-dot" id="sdot-3"></div>
+    </div>
+    <div id="set-pin-step-label" style="font-size:13px;color:var(--text-secondary);">Enter new PIN</div>
+    <div class="pin-pad">
+      <button class="pin-btn" onclick="setPinInput('1')">1</button>
+      <button class="pin-btn" onclick="setPinInput('2')">2</button>
+      <button class="pin-btn" onclick="setPinInput('3')">3</button>
+      <button class="pin-btn" onclick="setPinInput('4')">4</button>
+      <button class="pin-btn" onclick="setPinInput('5')">5</button>
+      <button class="pin-btn" onclick="setPinInput('6')">6</button>
+      <button class="pin-btn" onclick="setPinInput('7')">7</button>
+      <button class="pin-btn" onclick="setPinInput('8')">8</button>
+      <button class="pin-btn" onclick="setPinInput('9')">9</button>
+      <button class="pin-btn action" onclick="setPinDelete()">⌫</button>
+      <button class="pin-btn" onclick="setPinInput('0')">0</button>
+      <button class="pin-btn action" onclick="cancelSetPin()">✕</button>
+    </div>
+    <div class="pin-error" id="set-pin-error"></div>
+  </div>
+</div>
+
+
+<!-- ============================================================
+     APP SHELL
+     ============================================================ -->
+<div id="app">
+
+  <!-- TOP BAR -->
+  <header class="topbar">
+    <div class="topbar-logo">DocVault</div>
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="global-search" placeholder="Search documents…" oninput="handleSearch(this.value)">
+    </div>
+    <div class="topbar-actions">
+      <button class="icon-btn" onclick="toggleTheme()" id="theme-btn" title="Toggle theme">🌙</button>
+      <button class="icon-btn" onclick="lockApp()" title="Lock app">🔒</button>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content">
+
+    <!-- HOME PAGE -->
+    <section class="page active" id="page-home">
+      <div class="home-greeting">
+        <h2>Hello, Asif 👋</h2>
+        <p id="home-date-str">Loading…</p>
+      </div>
+
+      <!-- Storage indicator -->
+      <div class="storage-card">
+        <div class="storage-header">
+          <span>💾 Storage Used</span>
+          <small id="storage-text">0 KB / ~5 MB</small>
+        </div>
+        <div class="storage-bar-bg">
+          <div class="storage-bar-fill" id="storage-bar" style="width:0%"></div>
+        </div>
+      </div>
+
+      <div class="section-title">Family Folders</div>
+      <div class="person-cards">
+        <div class="person-card" data-person="myself"  onclick="openFolder('myself')">
+          <div class="person-avatar">👤</div>
+          <div class="person-name">Myself</div>
+          <div class="person-count" id="cnt-myself">0 documents</div>
+        </div>
+        <div class="person-card" data-person="father"  onclick="openFolder('father')">
+          <div class="person-avatar">👨</div>
+          <div class="person-name">Father</div>
+          <div class="person-count" id="cnt-father">0 documents</div>
+        </div>
+        <div class="person-card" data-person="mother"  onclick="openFolder('mother')">
+          <div class="person-avatar">👩</div>
+          <div class="person-name">Mother</div>
+          <div class="person-count" id="cnt-mother">0 documents</div>
+        </div>
+        <div class="person-card" data-person="sister"  onclick="openFolder('sister')">
+          <div class="person-avatar">👧</div>
+          <div class="person-name">Sister (Zara)</div>
+          <div class="person-count" id="cnt-sister">0 documents</div>
+        </div>
+      </div>
+
+      <div class="section-title">Recent Documents</div>
+      <div id="recent-list" class="recent-list">
+        <div class="empty-state">
+          <div class="empty-icon">📂</div>
+          <h3>No documents yet</h3>
+          <p>Tap + to add your first document</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- FOLDER PAGE -->
+    <section class="page" id="page-folder">
+      <div class="folder-header">
+        <button class="folder-back" onclick="goHome()">←</button>
+        <div class="folder-title-wrap">
+          <h2 id="folder-title">Folder</h2>
+          <p id="folder-subtitle">0 documents</p>
+        </div>
+        <div class="folder-actions">
+          <button class="icon-btn" onclick="openUploadSheet()" title="Add document">➕</button>
+        </div>
+      </div>
+
+      <!-- Tag filters -->
+      <div class="tag-filters" id="tag-filters">
+        <div class="tag-chip active" data-tag="all" onclick="filterByTag('all',this)">All</div>
+      </div>
+
+      <!-- Sort -->
+      <div class="sort-bar">
+        <label>Sort:</label>
+        <select class="sort-select" id="sort-select" onchange="applySortAndRender()">
+          <option value="date-desc">Newest first</option>
+          <option value="date-asc">Oldest first</option>
+          <option value="name-asc">Name A→Z</option>
+          <option value="name-desc">Name Z→A</option>
+        </select>
+      </div>
+
+      <!-- Doc grid -->
+      <div class="doc-grid" id="doc-grid"></div>
+    </section>
+
+    <!-- SEARCH RESULTS PAGE -->
+    <section class="page" id="page-search">
+      <div class="home-greeting">
+        <h2>Search Results</h2>
+        <p id="search-result-count">0 found</p>
+      </div>
+      <div class="doc-grid" id="search-grid"></div>
+    </section>
+
+    <!-- SETTINGS PAGE -->
+    <section class="page" id="page-settings">
+      <div class="home-greeting">
+        <h2>Settings ⚙️</h2>
+        <p>App preferences & security</p>
+      </div>
+
+      <div class="settings-section">
+        <div class="section-title">Security</div>
+        <div class="settings-item" onclick="openChangePIN()">
+          <div class="settings-icon">🔑</div>
+          <div class="settings-info">
+            <strong>Change PIN</strong>
+            <small>Update your 4-digit lock PIN</small>
+          </div>
+          <div class="settings-right">›</div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="section-title">Appearance</div>
+        <div class="settings-item" onclick="toggleTheme()">
+          <div class="settings-icon" id="theme-settings-icon">🌙</div>
+          <div class="settings-info">
+            <strong id="theme-settings-label">Dark Mode</strong>
+            <small>Switch between dark and light theme</small>
+          </div>
+          <div class="settings-right">
+            <div class="toggle on" id="theme-toggle"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="section-title">Data Management</div>
+        <div class="settings-item" onclick="exportBackup()">
+          <div class="settings-icon">📦</div>
+          <div class="settings-info">
+            <strong>Export Backup</strong>
+            <small>Save all documents as a backup file</small>
+          </div>
+          <div class="settings-right">›</div>
+        </div>
+        <div class="settings-item" onclick="document.getElementById('import-input').click()">
+          <div class="settings-icon">📥</div>
+          <div class="settings-info">
+            <strong>Import Backup</strong>
+            <small>Restore from a backup file</small>
+          </div>
+          <div class="settings-right">›</div>
+        </div>
+        <input type="file" id="import-input" accept=".json,.docvault" style="display:none" onchange="importBackup(event)">
+        <div class="settings-item" onclick="confirmClearAll()">
+          <div class="settings-icon">🗑️</div>
+          <div class="settings-info">
+            <strong style="color:var(--red)">Clear All Data</strong>
+            <small>Delete all documents and reset app</small>
+          </div>
+          <div class="settings-right">›</div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="section-title">About</div>
+        <div class="settings-item" style="cursor:default;">
+          <div class="settings-icon">ℹ️</div>
+          <div class="settings-info">
+            <strong>DocVault v1.0</strong>
+            <small>Built for Asif Mandal & Family • Fully offline</small>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- BOTTOM NAV -->
+  <nav class="bottom-nav">
+    <button class="nav-item active" id="nav-home"     onclick="switchTab('home')">
+      <span>🏠</span><span>Home</span>
+    </button>
+    <button class="nav-item" id="nav-search-tab" onclick="switchTab('search')">
+      <span>🔍</span><span>Search</span>
+    </button>
+    <button class="nav-item" id="nav-settings"   onclick="switchTab('settings')">
+      <span>⚙️</span><span>Settings</span>
+    </button>
+  </nav>
+
+  <!-- FAB -->
+  <button class="fab" id="fab" onclick="toggleFab()">＋</button>
+
+  <div class="fab-backdrop" id="fab-backdrop" onclick="closeFab()"></div>
+  <div class="fab-menu" id="fab-menu">
+    <div class="fab-option">
+      <div class="fab-option-label">Capture Photo</div>
+      <button class="fab-mini" onclick="closeFab();openCamera()">📸</button>
+    </div>
+    <div class="fab-option">
+      <div class="fab-option-label">Upload File</div>
+      <button class="fab-mini" onclick="closeFab();openUploadSheet()">📁</button>
+    </div>
+  </div>
+
+</div><!-- /app -->
+
+
+<!-- ============================================================
+     UPLOAD SHEET MODAL
+     ============================================================ -->
+<div class="modal-overlay hidden" id="upload-modal">
+  <div class="modal-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <h3>Add Document</h3>
+      <button class="sheet-close" onclick="closeModal('upload-modal')">✕</button>
+    </div>
+    <div class="sheet-body">
+      <div class="form-group">
+        <label class="form-label">Folder (Person)</label>
+        <select class="form-input" id="upload-person">
+          <option value="myself">Myself</option>
+          <option value="father">Father</option>
+          <option value="mother">Mother</option>
+          <option value="sister">Sister (Zara)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Document Name</label>
+        <input type="text" class="form-input" id="upload-name" placeholder="e.g. Aadhaar Card">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tags (press Enter or comma to add)</label>
+        <div class="tag-input-wrap" id="tag-input-wrap" onclick="document.getElementById('tag-raw').focus()">
+          <input type="text" id="tag-raw" placeholder="Type tag…" onkeydown="handleTagKey(event)">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Files</label>
+        <div class="drop-zone" id="drop-zone"
+             ondragover="event.preventDefault();this.classList.add('over')"
+             ondragleave="this.classList.remove('over')"
+             ondrop="handleDrop(event)">
+          <input type="file" id="file-input" multiple accept="image/*,.pdf" onchange="handleFileSelect(event)">
+          <div class="drop-zone-icon">📎</div>
+          <h4>Tap to choose files</h4>
+          <p>JPG, PNG, PDF supported</p>
+        </div>
+        <div class="upload-previews" id="upload-previews"></div>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="saveUpload()">💾 Save Document</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ============================================================
+     RENAME MODAL
+     ============================================================ -->
+<div class="modal-overlay hidden center" id="rename-modal">
+  <div class="modal-center">
+    <h3>Rename Document</h3>
+    <p>Enter a new name for this document.</p>
+    <div class="form-group">
+      <input type="text" class="form-input" id="rename-input" placeholder="Document name">
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-secondary btn-full" onclick="closeModal('rename-modal')">Cancel</button>
+      <button class="btn btn-primary btn-full" onclick="confirmRename()">Rename</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ============================================================
+     DELETE CONFIRM MODAL
+     ============================================================ -->
+<div class="modal-overlay hidden center" id="delete-modal">
+  <div class="modal-center">
+    <h3>Delete Document?</h3>
+    <p id="delete-modal-msg">This document will be permanently removed. This action cannot be undone.</p>
+    <div class="btn-row">
+      <button class="btn btn-secondary btn-full" onclick="closeModal('delete-modal')">Cancel</button>
+      <button class="btn btn-danger btn-full" onclick="confirmDelete()">Delete</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ============================================================
+     CLEAR ALL CONFIRM MODAL
+     ============================================================ -->
+<div class="modal-overlay hidden center" id="clear-modal">
+  <div class="modal-center">
+    <h3>⚠️ Clear All Data?</h3>
+    <p>This will permanently delete ALL documents, settings, and your PIN. This cannot be undone.</p>
+    <div class="btn-row">
+      <button class="btn btn-secondary btn-full" onclick="closeModal('clear-modal')">Cancel</button>
+      <button class="btn btn-danger btn-full" onclick="doClearAll()">Clear Everything</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ============================================================
+     CONTEXT MENU
+     ============================================================ -->
+<div class="context-menu hidden" id="context-menu">
+  <div class="ctx-item" onclick="ctxPreview()"><span>👁️</span> Preview</div>
+  <div class="ctx-item" onclick="ctxDownload()"><span>⬇️</span> Download</div>
+  <div class="ctx-item" onclick="ctxRename()"><span>✏️</span> Rename</div>
+  <div class="ctx-item danger" onclick="ctxDelete()"><span>🗑️</span> Delete</div>
+</div>
+
+
+<!-- ============================================================
+     PREVIEW MODAL
+     ============================================================ -->
+<div id="preview-modal" class="hidden">
+  <div class="preview-topbar">
+    <button class="icon-btn" onclick="closePreview()" style="flex:none">✕</button>
+    <h4 id="preview-title">Document</h4>
+    <button class="icon-btn" id="preview-dl-btn" style="flex:none" onclick="downloadPreviewDoc()">⬇️</button>
+  </div>
+  <div class="preview-body" id="preview-body"></div>
+  <div class="preview-footer">
+    <button class="btn btn-secondary btn-sm" onclick="closePreview()">Close</button>
+    <button class="btn btn-primary btn-sm" onclick="downloadPreviewDoc()">⬇️ Download</button>
+  </div>
+</div>
+
+
+<!-- ============================================================
+     CAMERA MODAL
+     ============================================================ -->
+<div id="camera-modal" class="hidden">
+  <video id="camera-video" autoplay playsinline muted></video>
+  <canvas id="camera-canvas" style="display:none"></canvas>
+  <div class="camera-controls">
+    <button class="icon-btn" style="width:48px;height:48px;font-size:20px" onclick="closeCamera()">✕</button>
+    <button class="shutter-btn" onclick="capturePhoto()"></button>
+    <button class="icon-btn" style="width:48px;height:48px;font-size:20px" onclick="flipCamera()">🔄</button>
+  </div>
+</div>
+
+
+<!-- TOAST CONTAINER -->
+<div id="toast-container"></div>
+
+
+<!-- ============================================================
+     JAVASCRIPT
+     ============================================================ -->
+<script>
+/* ============================================================
+   CONSTANTS & STATE
+   ============================================================ */
+const DB_KEY       = 'docvault_docs';
+const SETTINGS_KEY = 'docvault_settings';
+const PIN_KEY      = 'docvault_pin';
+
+const PEOPLE = ['myself','father','mother','sister'];
+const PERSON_NAMES = { myself:'Myself', father:'Father', mother:'Mother', sister:'Sister (Zara)' };
+const PERSON_EMOJI = { myself:'👤', father:'👨', mother:'👩', sister:'👧' };
+
+let currentFolder  = null;   // active folder key
+let currentFilter  = 'all';  // active tag filter
+let pendingFiles   = [];     // staged files for upload
+let pendingTags    = [];     // tags being added
+let contextDocId   = null;   // doc targeted by context menu
+let previewDocId   = null;   // doc in preview
+let renameDocId    = null;
+let deleteDocId    = null;
+
+let cameraStream   = null;
+let cameraFacing   = 'environment';
+
+let pinBuffer      = '';
+let setPinBuffer   = '';
+let setPinFirst    = '';
+let setPinPhase    = 1;      // 1=enter, 2=confirm
+let setPinCalledFrom = null; // 'settings' or null
+
+/* ============================================================
+   STORAGE HELPERS
+   ============================================================ */
+function loadDocs() {
+  try { return JSON.parse(localStorage.getItem(DB_KEY) || '[]'); }
+  catch(e) { return []; }
+}
+function saveDocs(docs) {
+  localStorage.setItem(DB_KEY, JSON.stringify(docs));
+}
+function loadSettings() {
+  try { return JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}'); }
+  catch(e) { return {}; }
+}
+function saveSettings(s) {
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+}
+function getPin() {
+  return localStorage.getItem(PIN_KEY) || '1234';
+}
+function setPin(p) {
+  localStorage.setItem(PIN_KEY, p);
+}
+
+/* ============================================================
+   UNIQUE ID
+   ============================================================ */
+function uid() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+}
+
+/* ============================================================
+   PIN LOCK LOGIC
+   ============================================================ */
+function updatePinDots(buffer, prefix='') {
+  for(let i=0;i<4;i++) {
+    const dot = document.getElementById((prefix||'') + 'dot-' + i);
+    if(!dot) return;
+    dot.classList.toggle('filled', i < buffer.length);
+  }
+}
+
+function pinInput(ch) {
+  if(pinBuffer.length >= 4) return;
+  pinBuffer += ch;
+  updatePinDots(pinBuffer);
+  if(pinBuffer.length === 4) {
+    setTimeout(() => {
+      if(pinBuffer === getPin()) {
+        unlockApp();
+      } else {
+        const err = document.getElementById('pin-error');
+        err.textContent = '❌ Incorrect PIN. Try again.';
+        err.classList.add('shake');
+        setTimeout(() => err.classList.remove('shake'), 500);
+        pinBuffer = '';
+        updatePinDots(pinBuffer);
+      }
+    }, 150);
+  }
+}
+function pinClear() {
+  pinBuffer = '';
+  updatePinDots(pinBuffer);
+  document.getElementById('pin-error').textContent = '';
+}
+function pinDelete() {
+  pinBuffer = pinBuffer.slice(0,-1);
+  updatePinDots(pinBuffer);
+}
+
+function unlockApp() {
+  document.getElementById('pin-screen').classList.add('hidden');
+  document.getElementById('app').classList.add('visible');
+  pinBuffer = '';
+  updatePinDots(pinBuffer);
+  initApp();
+}
+
+function lockApp() {
+  document.getElementById('pin-screen').classList.remove('hidden');
+  document.getElementById('app').classList.remove('visible');
+  pinBuffer = '';
+  updatePinDots(pinBuffer);
+  document.getElementById('pin-error').textContent = '';
+}
+
+/* ============================================================
+   SET / CHANGE PIN FLOW
+   ============================================================ */
+function openChangePIN() {
+  setPinBuffer = ''; setPinFirst = ''; setPinPhase = 1;
+  setPinCalledFrom = 'settings';
+  document.getElementById('set-pin-step-label').textContent = 'Enter new PIN';
+  document.getElementById('set-pin-error').textContent = '';
+  updateSetPinDots('');
+  document.getElementById('set-pin-overlay').classList.remove('hidden');
+}
+function cancelSetPin() {
+  document.getElementById('set-pin-overlay').classList.add('hidden');
+  setPinBuffer = ''; setPinFirst = ''; setPinPhase = 1;
+}
+function updateSetPinDots(buf) {
+  for(let i=0;i<4;i++) {
+    const dot = document.getElementById('sdot-' + i);
+    if(dot) dot.classList.toggle('filled', i < buf.length);
+  }
+}
+function setPinInput(ch) {
+  if(setPinBuffer.length >= 4) return;
+  setPinBuffer += ch;
+  updateSetPinDots(setPinBuffer);
+  if(setPinBuffer.length === 4) {
+    setTimeout(() => {
+      if(setPinPhase === 1) {
+        setPinFirst = setPinBuffer;
+        setPinBuffer = '';
+        setPinPhase = 2;
+        document.getElementById('set-pin-step-label').textContent = 'Confirm PIN';
+        updateSetPinDots('');
+      } else {
+        if(setPinBuffer === setPinFirst) {
+          setPin(setPinBuffer);
+          cancelSetPin();
+          showToast('✅ PIN updated successfully!', 'success');
+        } else {
+          const err = document.getElementById('set-pin-error');
+          err.textContent = 'PINs do not match. Try again.';
+          err.classList.add('shake');
+          setTimeout(() => err.classList.remove('shake'), 400);
+          setPinBuffer = ''; setPinFirst = ''; setPinPhase = 1;
+          document.getElementById('set-pin-step-label').textContent = 'Enter new PIN';
+          updateSetPinDots('');
+        }
+      }
+    }, 150);
+  }
+}
+function setPinDelete() {
+  setPinBuffer = setPinBuffer.slice(0,-1);
+  updateSetPinDots(setPinBuffer);
+}
+
+/* ============================================================
+   APP INIT
+   ============================================================ */
+function initApp() {
+  applyTheme();
+  updateHomeDate();
+  refreshHomeCounts();
+  renderRecent();
+  updateStorageBar();
+}
+
+function updateHomeDate() {
+  const d = new Date();
+  const opts = { weekday:'long', year:'numeric', month:'long', day:'numeric' };
+  document.getElementById('home-date-str').textContent = d.toLocaleDateString('en-IN', opts);
+}
+
+/* ============================================================
+   THEME
+   ============================================================ */
+function applyTheme() {
+  const s = loadSettings();
+  const isDark = s.darkMode !== false; // default dark
+  document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+  document.getElementById('theme-btn').textContent = isDark ? '🌙' : '☀️';
+  const tog = document.getElementById('theme-toggle');
+  if(tog) tog.classList.toggle('on', isDark);
+  const ti = document.getElementById('theme-settings-icon');
+  if(ti) ti.textContent = isDark ? '🌙' : '☀️';
+  const tl = document.getElementById('theme-settings-label');
+  if(tl) tl.textContent = isDark ? 'Dark Mode' : 'Light Mode';
+}
+function toggleTheme() {
+  const s = loadSettings();
+  s.darkMode = !(s.darkMode !== false);
+  saveSettings(s);
+  applyTheme();
+}
+
+/* ============================================================
+   NAVIGATION / TABS
+   ============================================================ */
+function switchTab(tab) {
+  ['home','search','settings'].forEach(t => {
+    document.getElementById('page-' + t).classList.remove('active');
+    document.getElementById('nav-' + (t==='search'?'search-tab':t)).classList.remove('active');
+  });
+  document.getElementById('page-folder').classList.remove('active');
+  document.getElementById('page-' + tab).classList.add('active');
+  document.getElementById('nav-' + (tab==='search'?'search-tab':tab)).classList.add('active');
+
+  // Show/hide FAB
+  const fab = document.getElementById('fab');
+  fab.classList.toggle('hidden', tab !== 'home');
+}
+
+function openFolder(person) {
+  currentFolder = person;
+  currentFilter = 'all';
+
+  document.getElementById('folder-title').textContent = PERSON_NAMES[person];
+  document.getElementById('page-folder').classList.add('active');
+  document.getElementById('page-home').classList.remove('active');
+  document.getElementById('nav-home').classList.remove('active');
+
+  // Pre-select person in upload modal
+  document.getElementById('upload-person').value = person;
+
+  // FAB visible
+  document.getElementById('fab').classList.remove('hidden');
+
+  renderFolderTags(person);
+  renderFolderDocs(person);
+}
+
+function goHome() {
+  currentFolder = null;
+  document.getElementById('page-folder').classList.remove('active');
+  document.getElementById('page-home').classList.add('active');
+  document.getElementById('nav-home').classList.add('active');
+  refreshHomeCounts();
+  renderRecent();
+  updateStorageBar();
+}
+
+/* ============================================================
+   HOME — counts & recent
+   ============================================================ */
+function refreshHomeCounts() {
+  const docs = loadDocs();
+  PEOPLE.forEach(p => {
+    const n = docs.filter(d => d.person === p).length;
+    document.getElementById('cnt-' + p).textContent = n + ' document' + (n===1?'':'s');
+  });
+}
+
+function renderRecent() {
+  const docs = loadDocs();
+  const recent = [...docs].sort((a,b) => b.createdAt - a.createdAt).slice(0,6);
+  const el = document.getElementById('recent-list');
+  if(!recent.length) {
+    el.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">📂</div>
+      <h3>No documents yet</h3>
+      <p>Tap ＋ to add your first document</p>
+    </div>`;
+    return;
+  }
+  el.innerHTML = recent.map(doc => {
+    const thumb = getThumbHTML(doc, true);
+    const date  = new Date(doc.createdAt).toLocaleDateString('en-IN',{day:'numeric',month:'short'});
+    return `<div class="recent-item" onclick="previewDoc('${doc.id}')">
+      <div class="recent-thumb">${thumb}</div>
+      <div class="recent-info">
+        <div class="recent-name">${escHtml(doc.name)}</div>
+        <div class="recent-meta">${PERSON_EMOJI[doc.person]} ${PERSON_NAMES[doc.person]} &nbsp;•&nbsp; ${date}</div>
+      </div>
+      <div class="recent-badge">${doc.tags[0] || doc.type.toUpperCase()}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ============================================================
+   STORAGE BAR
+   ============================================================ */
+function updateStorageBar() {
+  try {
+    const used = new Blob([localStorage.getItem(DB_KEY)||'']).size;
+    const maxBytes = 5 * 1024 * 1024;
+    const pct = Math.min(100, (used / maxBytes) * 100).toFixed(1);
+    document.getElementById('storage-bar').style.width = pct + '%';
+    document.getElementById('storage-text').textContent =
+      formatBytes(used) + ' / ~5 MB (' + pct + '%)';
+  } catch(e) {}
+}
+
+function formatBytes(b) {
+  if(b < 1024) return b + ' B';
+  if(b < 1024*1024) return (b/1024).toFixed(1) + ' KB';
+  return (b/(1024*1024)).toFixed(2) + ' MB';
+}
+
+/* ============================================================
+   FOLDER — tag filters & doc grid
+   ============================================================ */
+function renderFolderTags(person) {
+  const docs = loadDocs().filter(d => d.person === person);
+  const allTags = [...new Set(docs.flatMap(d => d.tags))];
+  const container = document.getElementById('tag-filters');
+  container.innerHTML = `<div class="tag-chip ${currentFilter==='all'?'active':''}" data-tag="all" onclick="filterByTag('all',this)">All</div>`;
+  allTags.forEach(t => {
+    const active = currentFilter === t ? 'active' : '';
+    container.innerHTML += `<div class="tag-chip ${active}" data-tag="${escHtml(t)}" onclick="filterByTag('${escHtml(t)}',this)">${escHtml(t)}</div>`;
+  });
+}
+
+function filterByTag(tag, el) {
+  currentFilter = tag;
+  document.querySelectorAll('.tag-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  renderFolderDocs(currentFolder);
+}
+
+function applySortAndRender() {
+  if(currentFolder) renderFolderDocs(currentFolder);
+}
+
+function renderFolderDocs(person, searchQ='') {
+  let docs = loadDocs().filter(d => d.person === person);
+  if(currentFilter !== 'all') docs = docs.filter(d => d.tags.includes(currentFilter));
+  if(searchQ) docs = docs.filter(d => d.name.toLowerCase().includes(searchQ.toLowerCase()));
+
+  // Sort
+  const sort = document.getElementById('sort-select').value;
+  docs.sort((a,b) => {
+    if(sort==='date-desc') return b.createdAt - a.createdAt;
+    if(sort==='date-asc')  return a.createdAt - b.createdAt;
+    if(sort==='name-asc')  return a.name.localeCompare(b.name);
+    if(sort==='name-desc') return b.name.localeCompare(a.name);
+    return 0;
+  });
+
+  const subtitle = docs.length + ' document' + (docs.length===1?'':'s');
+  document.getElementById('folder-subtitle').textContent = subtitle;
+
+  const grid = document.getElementById('doc-grid');
+  if(!docs.length) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
+      <div class="empty-icon">📄</div>
+      <h3>No documents</h3>
+      <p>${currentFilter!=='all'?'No docs with this tag.':'Tap ＋ to add documents.'}</p>
+    </div>`;
+    return;
+  }
+
+  grid.innerHTML = docs.map((doc, i) => buildDocCard(doc, i)).join('');
+}
+
+function buildDocCard(doc, i) {
+  const thumb = getThumbHTML(doc, false);
+  const date  = new Date(doc.createdAt).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'2-digit'});
+  const tagsHtml = doc.tags.slice(0,2).map(t => `<span class="doc-tag">${escHtml(t)}</span>`).join('');
+  return `<div class="doc-card" style="animation-delay:${i*40}ms" onclick="previewDoc('${doc.id}')" oncontextmenu="openContextMenu(event,'${doc.id}')">
+    <div class="doc-thumb">${thumb}</div>
+    <button class="doc-card-menu" onclick="event.stopPropagation();openContextMenu(event,'${doc.id}')">⋯</button>
+    <div class="doc-info">
+      <div class="doc-name">${escHtml(doc.name)}</div>
+      <div class="doc-tags">${tagsHtml}</div>
+      <div class="doc-date">${date}</div>
+    </div>
+  </div>`;
+}
+
+/* ============================================================
+   THUMBNAIL HELPER
+   ============================================================ */
+function getThumbHTML(doc, small) {
+  if(doc.type === 'image') {
+    return `<img src="${doc.data}" alt="${escHtml(doc.name)}" loading="lazy">`;
+  }
+  if(doc.type === 'pdf') {
+    return `<div class="doc-thumb-pdf"><span>📄</span><small>PDF</small></div>`;
+  }
+  return '📎';
+}
+
+/* ============================================================
+   UPLOAD LOGIC
+   ============================================================ */
+function openUploadSheet() {
+  closeFab();
+  pendingFiles = [];
+  pendingTags = [];
+  document.getElementById('upload-name').value = '';
+  document.getElementById('tag-raw').value = '';
+  document.getElementById('upload-previews').innerHTML = '';
+  renderTagChips();
+  if(currentFolder) document.getElementById('upload-person').value = currentFolder;
+  openModal('upload-modal');
+}
+
+function handleFileSelect(e) {
+  const files = Array.from(e.target.files);
+  files.forEach(addPendingFile);
+  e.target.value = '';
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('drop-zone').classList.remove('over');
+  Array.from(e.dataTransfer.files).forEach(addPendingFile);
+}
+
+function addPendingFile(file) {
+  if(!file.type.startsWith('image/') && file.type !== 'application/pdf') {
+    showToast('⚠️ Only images and PDFs are supported.', 'error'); return;
+  }
+  const id = uid();
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    pendingFiles.push({ id, name: file.name, data: ev.target.result, type: file.type.startsWith('image/') ? 'image' : 'pdf' });
+    renderUploadPreviews();
+  };
+  reader.readAsDataURL(file);
+}
+
+function renderUploadPreviews() {
+  const wrap = document.getElementById('upload-previews');
+  wrap.innerHTML = pendingFiles.map(f => `
+    <div class="upload-preview-item">
+      ${f.type==='image' ? `<img src="${f.data}" alt="">` : '📄'}
+      <button onclick="removePendingFile('${f.id}')">✕</button>
+    </div>`).join('');
+}
+
+function removePendingFile(id) {
+  pendingFiles = pendingFiles.filter(f => f.id !== id);
+  renderUploadPreviews();
+}
+
+/* TAG INPUT */
+function handleTagKey(e) {
+  if(e.key === 'Enter' || e.key === ',') {
+    e.preventDefault();
+    const val = e.target.value.trim().replace(',','');
+    if(val && !pendingTags.includes(val)) { pendingTags.push(val); renderTagChips(); }
+    e.target.value = '';
+  } else if(e.key === 'Backspace' && !e.target.value && pendingTags.length) {
+    pendingTags.pop(); renderTagChips();
+  }
+}
+function renderTagChips() {
+  const wrap = document.getElementById('tag-input-wrap');
+  const input = document.getElementById('tag-raw');
+  wrap.querySelectorAll('.tag-chip').forEach(c=>c.remove());
+  pendingTags.forEach(t => {
+    const chip = document.createElement('div');
+    chip.className = 'tag-chip';
+    chip.innerHTML = `${escHtml(t)} <button onclick="removeTag('${escHtml(t)}')">✕</button>`;
+    wrap.insertBefore(chip, input);
+  });
+}
+function removeTag(t) {
+  pendingTags = pendingTags.filter(x=>x!==t);
+  renderTagChips();
+}
+
+function saveUpload() {
+  const name   = document.getElementById('upload-name').value.trim();
+  const person = document.getElementById('upload-person').value;
+  // Flush any typed-but-not-entered tag
+  const rawTag = document.getElementById('tag-raw').value.trim();
+  if(rawTag && !pendingTags.includes(rawTag)) pendingTags.push(rawTag);
+
+  if(!name) { showToast('⚠️ Please enter a document name.','error'); return; }
+  if(!pendingFiles.length) { showToast('⚠️ Please add at least one file.','error'); return; }
+
+  const docs = loadDocs();
+  pendingFiles.forEach(f => {
+    docs.push({
+      id: uid(),
+      person,
+      name,
+      tags: [...pendingTags],
+      type: f.type,
+      data: f.data,
+      fileName: f.name,
+      createdAt: Date.now()
+    });
+  });
+  saveDocs(docs);
+
+  closeModal('upload-modal');
+  pendingFiles = []; pendingTags = [];
+  showToast('✅ Document saved!', 'success');
+
+  // Refresh current view
+  if(currentFolder === person) {
+    renderFolderTags(person);
+    renderFolderDocs(person);
+  }
+  refreshHomeCounts();
+  renderRecent();
+  updateStorageBar();
+}
+
+/* ============================================================
+   PREVIEW
+   ============================================================ */
+function previewDoc(id) {
+  const docs = loadDocs();
+  const doc = docs.find(d => d.id === id);
+  if(!doc) return;
+  previewDocId = id;
+
+  document.getElementById('preview-title').textContent = doc.name;
+  const body = document.getElementById('preview-body');
+
+  if(doc.type === 'image') {
+    body.innerHTML = `<img src="${doc.data}" alt="${escHtml(doc.name)}">`;
+  } else if(doc.type === 'pdf') {
+    // Try embedded PDF, fallback to download prompt
+    body.innerHTML = `<div class="preview-pdf-fallback">
+      <span>📄</span>
+      <h3>${escHtml(doc.name)}</h3>
+      <p style="color:var(--text-muted)">PDF preview may not work on all mobile browsers.<br>Use Download to open it.</p>
+      <button class="btn btn-primary" onclick="downloadPreviewDoc()">⬇️ Download PDF</button>
+    </div>`;
+    // Try iframe if supported
+    try {
+      const blob = dataURItoBlob(doc.data);
+      const url  = URL.createObjectURL(blob);
+      body.innerHTML = `<iframe src="${url}" style="width:100%;height:100%;border:none;border-radius:10px"></iframe>`;
+    } catch(e) {}
+  }
+
+  document.getElementById('preview-modal').classList.remove('hidden');
+}
+
+function closePreview() {
+  document.getElementById('preview-modal').classList.add('hidden');
+  document.getElementById('preview-body').innerHTML = '';
+  previewDocId = null;
+}
+
+function downloadPreviewDoc() {
+  if(!previewDocId) return;
+  downloadDoc(previewDocId);
+}
+
+/* ============================================================
+   DOWNLOAD
+   ============================================================ */
+function downloadDoc(id) {
+  const doc = loadDocs().find(d => d.id === id);
+  if(!doc) return;
+  const a = document.createElement('a');
+  a.href = doc.data;
+  a.download = doc.fileName || (doc.name + (doc.type==='pdf'?'.pdf':'.jpg'));
+  a.click();
+  showToast('⬇️ Downloading…', 'info');
+}
+
+/* ============================================================
+   CONTEXT MENU
+   ============================================================ */
+function openContextMenu(e, id) {
+  e.preventDefault(); e.stopPropagation();
+  contextDocId = id;
+  const menu = document.getElementById('context-menu');
+  menu.classList.remove('hidden');
+  // Position
+  const x = Math.min(e.clientX, window.innerWidth - 200);
+  const y = Math.min(e.clientY, window.innerHeight - 180);
+  menu.style.left = x + 'px';
+  menu.style.top  = y + 'px';
+}
+function closeContextMenu() {
+  document.getElementById('context-menu').classList.add('hidden');
+  contextDocId = null;
+}
+document.addEventListener('click', () => closeContextMenu());
+
+function ctxPreview()  { if(contextDocId) previewDoc(contextDocId);  closeContextMenu(); }
+function ctxDownload() { if(contextDocId) downloadDoc(contextDocId); closeContextMenu(); }
+function ctxRename() {
+  if(!contextDocId) return;
+  renameDocId = contextDocId;
+  const doc = loadDocs().find(d => d.id === renameDocId);
+  document.getElementById('rename-input').value = doc ? doc.name : '';
+  closeContextMenu();
+  openModal('rename-modal');
+  setTimeout(() => document.getElementById('rename-input').focus(), 300);
+}
+function ctxDelete() {
+  if(!contextDocId) return;
+  deleteDocId = contextDocId;
+  closeContextMenu();
+  openModal('delete-modal');
+}
+
+function confirmRename() {
+  const newName = document.getElementById('rename-input').value.trim();
+  if(!newName) { showToast('⚠️ Name cannot be empty.','error'); return; }
+  const docs = loadDocs();
+  const idx = docs.findIndex(d => d.id === renameDocId);
+  if(idx !== -1) { docs[idx].name = newName; saveDocs(docs); }
+  closeModal('rename-modal');
+  showToast('✏️ Renamed successfully!', 'success');
+  if(currentFolder) renderFolderDocs(currentFolder);
+  renderRecent();
+}
+
+function confirmDelete() {
+  let docs = loadDocs();
+  docs = docs.filter(d => d.id !== deleteDocId);
+  saveDocs(docs);
+  closeModal('delete-modal');
+  showToast('🗑️ Document deleted.', 'info');
+  if(currentFolder) {
+    renderFolderTags(currentFolder);
+    renderFolderDocs(currentFolder);
+  }
+  refreshHomeCounts();
+  renderRecent();
+  updateStorageBar();
+}
+
+/* ============================================================
+   GLOBAL SEARCH
+   ============================================================ */
+let searchTimeout;
+function handleSearch(q) {
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(() => {
+    if(!q.trim()) { switchTab('home'); return; }
+    doSearch(q.trim());
+  }, 280);
+}
+
+function doSearch(q) {
+  const docs = loadDocs().filter(d =>
+    d.name.toLowerCase().includes(q.toLowerCase()) ||
+    d.tags.some(t => t.toLowerCase().includes(q.toLowerCase()))
+  );
+
+  document.getElementById('search-result-count').textContent =
+    docs.length + ' result' + (docs.length===1?'':'s') + ' for "' + q + '"';
+
+  const grid = document.getElementById('search-grid');
+  if(!docs.length) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
+      <div class="empty-icon">🔍</div>
+      <h3>No results</h3>
+      <p>Try a different keyword or tag.</p>
+    </div>`;
+  } else {
+    grid.innerHTML = docs.map((doc, i) => buildDocCard(doc, i)).join('');
+  }
+
+  // Show search page
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-search').classList.add('active');
+  document.getElementById('nav-search-tab').classList.add('active');
+}
+
+/* ============================================================
+   FAB
+   ============================================================ */
+let fabOpen = false;
+function toggleFab() {
+  fabOpen = !fabOpen;
+  document.getElementById('fab').textContent = fabOpen ? '✕' : '＋';
+  document.getElementById('fab-menu').classList.toggle('open', fabOpen);
+  document.getElementById('fab-backdrop').classList.toggle('open', fabOpen);
+}
+function closeFab() {
+  fabOpen = false;
+  document.getElementById('fab').textContent = '＋';
+  document.getElementById('fab-menu').classList.remove('open');
+  document.getElementById('fab-backdrop').classList.remove('open');
+}
+
+/* ============================================================
+   CAMERA
+   ============================================================ */
+async function openCamera() {
+  const modal = document.getElementById('camera-modal');
+  modal.classList.remove('hidden');
+  await startCamera();
+}
+
+async function startCamera() {
+  try {
+    if(cameraStream) { cameraStream.getTracks().forEach(t=>t.stop()); }
+    cameraStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: cameraFacing }, audio: false
+    });
+    document.getElementById('camera-video').srcObject = cameraStream;
+  } catch(e) {
+    showToast('⚠️ Camera access denied.', 'error');
+    closeCamera();
+  }
+}
+
+function flipCamera() {
+  cameraFacing = cameraFacing === 'environment' ? 'user' : 'environment';
+  startCamera();
+}
+
+function capturePhoto() {
+  const video  = document.getElementById('camera-video');
+  const canvas = document.getElementById('camera-canvas');
+  canvas.width  = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video, 0, 0);
+  const dataURL = canvas.toDataURL('image/jpeg', 0.85);
+
+  // Stage as pending file
+  const ts = new Date().toISOString().slice(0,19).replace('T','_').replace(/:/g,'-');
+  pendingFiles.push({ id: uid(), name: 'Photo_'+ts+'.jpg', data: dataURL, type: 'image' });
+
+  // Flash effect
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:#fff;z-index:800;pointer-events:none;animation:fadeIn 0.1s ease reverse forwards;';
+  document.body.appendChild(overlay);
+  setTimeout(() => overlay.remove(), 300);
+
+  closeCamera();
+  openUploadSheet();
+  renderUploadPreviews();
+}
+
+function closeCamera() {
+  if(cameraStream) { cameraStream.getTracks().forEach(t=>t.stop()); cameraStream = null; }
+  document.getElementById('camera-modal').classList.add('hidden');
+}
+
+/* ============================================================
+   BACKUP — EXPORT
+   ============================================================ */
+function exportBackup() {
+  const payload = {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    docs: loadDocs(),
+    settings: loadSettings()
+  };
+  const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url;
+  a.download = 'DocVault_Backup_' + new Date().toISOString().slice(0,10) + '.docvault';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('📦 Backup exported!', 'success');
+}
+
+/* ============================================================
+   BACKUP — IMPORT
+   ============================================================ */
+function importBackup(e) {
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      const payload = JSON.parse(ev.target.result);
+      if(!payload.docs || !Array.isArray(payload.docs)) throw new Error('Invalid backup');
+      saveDocs(payload.docs);
+      if(payload.settings) saveSettings(payload.settings);
+      showToast('✅ Backup imported! ' + payload.docs.length + ' docs restored.', 'success');
+      goHome();
+      initApp();
+    } catch(err) {
+      showToast('❌ Invalid backup file.', 'error');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+/* ============================================================
+   CLEAR ALL
+   ============================================================ */
+function confirmClearAll() {
+  openModal('clear-modal');
+}
+function doClearAll() {
+  localStorage.removeItem(DB_KEY);
+  localStorage.removeItem(SETTINGS_KEY);
+  localStorage.removeItem(PIN_KEY);
+  closeModal('clear-modal');
+  showToast('🗑️ All data cleared. Reloading…', 'info');
+  setTimeout(() => location.reload(), 1500);
+}
+
+/* ============================================================
+   MODAL HELPERS
+   ============================================================ */
+function openModal(id) {
+  document.getElementById(id).classList.remove('hidden');
+}
+function closeModal(id) {
+  document.getElementById(id).classList.add('hidden');
+}
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+function showToast(msg, type='info', duration=2800) {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = 'toast ' + type;
+  toast.textContent = msg;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.classList.add('out');
+    setTimeout(() => toast.remove(), 350);
+  }, duration);
+}
+
+/* ============================================================
+   UTILITIES
+   ============================================================ */
+function escHtml(str) {
+  return String(str).replace(/[&<>"']/g, m =>
+    ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
+}
+
+function dataURItoBlob(dataURI) {
+  const [header, data] = dataURI.split(',');
+  const mime = header.match(/:(.*?);/)[1];
+  const raw  = atob(data);
+  const arr  = new Uint8Array(raw.length);
+  for(let i=0;i<raw.length;i++) arr[i] = raw.charCodeAt(i);
+  return new Blob([arr], { type: mime });
+}
+
+/* ============================================================
+   KEYBOARD SHORTCUTS (desktop)
+   ============================================================ */
+document.addEventListener('keydown', e => {
+  if(document.getElementById('pin-screen').classList.contains('hidden')) return;
+  if(e.key >= '0' && e.key <= '9') pinInput(e.key);
+  else if(e.key === 'Backspace') pinDelete();
+});
+
+/* ============================================================
+   CLOSE MODALS ON OVERLAY CLICK
+   ============================================================ */
+['upload-modal','rename-modal','delete-modal','clear-modal'].forEach(id => {
+  const el = document.getElementById(id);
+  el.addEventListener('click', function(e) {
+    if(e.target === this) closeModal(id);
+  });
+});
+
+/* ============================================================
+   SWIPE DOWN TO CLOSE SHEET
+   ============================================================ */
+(function() {
+  let startY = 0;
+  document.getElementById('upload-modal').addEventListener('touchstart', e => {
+    startY = e.touches[0].clientY;
+  });
+  document.getElementById('upload-modal').addEventListener('touchend', e => {
+    if(e.changedTouches[0].clientY - startY > 80) closeModal('upload-modal');
+  });
+})();
+
+/* ============================================================
+   STARTUP — check if first time or has PIN set
+   ============================================================ */
+(function startup() {
+  const pin = localStorage.getItem(PIN_KEY);
+  if(!pin) {
+    // First launch — set default pin quietly
+    setPin('1234');
+  }
+  // Always show PIN screen on load
+  document.getElementById('pin-hint').textContent = pin
+    ? 'Enter your PIN to unlock'
+    : 'Default PIN: 1234 • Change in Settings';
+})();
+
+</script>
+</body>
+</html>
